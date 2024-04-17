@@ -1,13 +1,14 @@
+#include "esp_log.h"
+#include "esp_now.h"
+#include "esp_wifi.h"
 #include <Logic.hpp>
 #include <array>
 #include <iostream>
 #include <memory>
-#include <esp_now.h>
-#include <WiFi.h>
+#include <stdio.h>
 
 // Valec MAC    = C8:2B:96:B5:CA:84
 // Joystick MAC = C8:2B:96:B8:C9:C0
-
 
 #include "colors.hpp"
 #include "global_vars.hpp"
@@ -34,50 +35,104 @@ int GeneratorPieceList[GeneratorBagSize];
 
 int player_score = 0;
 
-int brightness = 15;
 int view_offset = 0;
 
+int brightness = 5;
 
 //Structure example to receive data
 //Must match the sender structure
 typedef struct data_struct {
-  int x;
-  int y;
-  int z;
+    int x;
+    int y;
+    int z;
 } data_struct;
 
 //Create a struct_message called data
 data_struct data;
 
-//callback function that will be executed when data is received
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&data, incomingData, sizeof(data));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-  Serial.print("x: ");
-  Serial.println(data.x);
-  Serial.print("y: ");
-  Serial.println(data.y);
-    Serial.print("z: ");
-  Serial.println(data.z);
-  Serial.println();
+// void receive_callback(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data, int data_len) {
+    const data_struct* data_s = (const data_struct*)data;
+    printf("x:%d y:%d z:%d \n", data_s->x, data_s->y, data_s->z);
+
+    int joy_x = (data_s->x) - (_cfg_joy_res / 2);
+    int joy_y = (data_s->y) - (_cfg_joy_res / 2);
+    int joy_z = (data_s->z) - (_cfg_joy_res / 2);
+
+    if (joy_x < -_cfg_joy_dead) {
+        activePiece->position.x++;
+        activePiece->interact();
+        ShouldRunGame = true;
+    } else if (joy_x > _cfg_joy_dead) {
+        activePiece->position.x--;
+        activePiece->interact();
+        ShouldRunGame = true;
+    }
+    if (joy_y < -_cfg_joy_dead) {
+        activePiece->rotateClockwise();
+        activePiece->interact();
+        ShouldRunGame = true;
+    } else if (joy_y > _cfg_joy_dead) {
+        interval = 100;
+        ShouldRunGame = true;
+    } else {
+        interval = 750;
+        ShouldRunGame = true;
+    }
+    if (joy_z < -_cfg_joy_dead) {
+        activePiece->rotateCounterClockwise();
+        activePiece->interact();
+        ShouldRunGame = true;
+    } else if (joy_z > _cfg_joy_dead) {
+        activePiece->rotateClockwise();
+        activePiece->interact();
+        ShouldRunGame = true;
+    }
+    /*
+       switch (int(val)) {
+        case 1: // rotate
+            activePiece->rotateClockwise();
+            activePiece->interact();
+            ShouldRunGame = true;
+            break;
+        case 2: // right
+            activePiece->position.x++;
+            activePiece->interact();
+            ShouldRunGame = true;
+            break;
+        case 3: // left
+            activePiece->position.x--;
+            activePiece->interact();
+            ShouldRunGame = true;
+            break;
+        case 4: // fast_down
+            interval = 100;
+            ShouldRunGame = true;
+            break;
+        case 5: // slow_down
+            interval = 750;
+            ShouldRunGame = true;
+            break;
+
+        default:
+            break;
+        }
+    });
+       */
 }
 
-
-
-
-void GameOver() {
+void gameOver() {
     GameOverBool = true;
 
     // show last frame
-    for (int x = 0; x < _cfg_width; x++) {
-        for (int y = 0; y < _cfg_height; y++) {
+    for (int x = 0; x < display.width(); x++) {
+        for (int y = 0; y < display.height(); y++) {
             int p_x = x + view_offset;
             while (p_x < 0) {
-                p_x += _cfg_width;
+                p_x += display.width();
             }
-            while (p_x >= _cfg_width) {
-                p_x -= _cfg_width;
+            while (p_x >= display.width()) {
+                p_x -= display.width();
             }
             display.setColor(p_x, y, colors[map.placedPixels[x][y]]);
         }
@@ -144,7 +199,7 @@ void newPiece() {
     //std::cout << GeneratorPieceList[GeneratorPieceIndex] << "\n";
     PieceKind pieceKind = static_cast<PieceKind>(GeneratorPieceList[GeneratorPieceIndex]);
 
-    activePiece = std::make_unique<Piece>(pieceKind, Vec2 { 4 - view_offset, 0 }, 0); // create a new piece
+    activePiece = std::make_unique<Piece>(pieceKind, Vec2 { (int(_cfg_width / 2) - 1) - view_offset, 0 }, 0); // create a new piece
 }
 
 void test() {
@@ -162,7 +217,7 @@ void test() {
                 fail = true;
             }
             // Right
-            if (p.pos.x >= _cfg_width) {
+            if (p.pos.x >= display.width()) {
                 fail = true;
             }
         }
@@ -170,7 +225,7 @@ void test() {
 
     for (auto& p : pixels) {
         // Down
-        if (p.pos.y >= _cfg_height) {
+        if (p.pos.y >= display.height()) {
             hitBottom = true;
         }
     }
@@ -188,9 +243,9 @@ void test() {
         activePiece->confirm();
     }
 
-    for (int i = 0; i < _cfg_width; i++) {
+    for (int i = 0; i < display.width(); i++) {
         if (map.placedPixels[i][1] != 0) {
-            GameOver();
+            gameOver();
         }
     }
 }
@@ -223,56 +278,34 @@ void loop() {
 }
 
 void logicMain() {
-  
-  //Set device as a Wi-Fi Station
-  WiFi.mode(WIFI_STA);
 
-  //Init ESP-NOW
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
-  
-  // Once ESPNow is successfully Init, we will register for recv CB to
-  // get recv packer info
-  esp_now_register_recv_cb(OnDataRecv);
+    // Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
 
-       /*
-       switch (int(val)) {
-        case 1: // rotate
-            activePiece->rotateClockwise();
-            activePiece->interact();
-            ShouldRunGame = true;
-            break;
-        case 2: // right
-            activePiece->position.x++;
-            activePiece->interact();
-            ShouldRunGame = true;
-            break;
-        case 3: // left
-            activePiece->position.x--;
-            activePiece->interact();
-            ShouldRunGame = true;
-            break;
-        case 4: // fast_down
-            interval = 100;
-            ShouldRunGame = true;
-            break;
-        case 5: // slow_down
-            interval = 750;
-            ShouldRunGame = true;
-            break;
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
-        default:
-            break;
-        }
-    });
-       */
+    // Initialize ESP-NOW
+    ESP_ERROR_CHECK(esp_now_init());
+
+    uint8_t mac[6];
+    esp_wifi_get_mac(WIFI_IF_STA, mac);
+    ESP_LOGI("main", "MAC: %02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    // Register callback function for receiving data
+    esp_now_register_recv_cb(recieve_callback);
 
     while (true) {
         // Setup functions
         GameOverBool = false;
-
         player_score = 0;
         display.clear();
         displayScore();
