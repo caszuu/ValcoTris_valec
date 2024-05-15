@@ -93,7 +93,7 @@ public:
                 display.setColor(i, row, display.at(i + 1, row));
                 display.setColor(i + 1, row, Rgb(0, 0, 0));
 
-                display.setColor((_cfg_width - i) - 1, row, display.at((_cfg_width - i) - 2, row));
+                display.setColor((_cfg_width - i) - 1, row, display.at((_cfg_height - i) - 2, row));
                 display.setColor((_cfg_width - i) - 2, row, Rgb(0, 0, 0));
                 display.show(brightness);
                 delay(time);
@@ -112,7 +112,7 @@ public:
 
     void clearMap() {
         for (int y = 0; y < _cfg_height; y++) {
-            for (int x = 0; x < _cfg_height; x++) {
+            for (int x = 0; x < _cfg_width; x++) {
                 placedPixels[x][y] = 0;
             }
         }

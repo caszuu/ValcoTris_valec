@@ -26,6 +26,9 @@ long current_millis = 0;
 long prev_millis = 0;
 long interval = 1000; // 750
 
+long cooldown_timer = 0;
+long cooldown = 250;
+
 bool GameOverBool = false;
 bool ShouldRunGame = true;
 
@@ -36,6 +39,7 @@ int GeneratorPieceList[GeneratorBagSize];
 int player_score = 0;
 
 int view_offset = 0;
+int last_view_offset = 0;
 
 int brightness = 5;
 
@@ -53,6 +57,10 @@ data_struct data;
 // void receive_callback(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data, int data_len) {
     const data_struct* data_s = (const data_struct*)data;
+    if (cooldown_timer > millis()) {
+        return;
+    }
+
     printf("x:%d y:%d z:%d \n", data_s->x, data_s->y, data_s->z);
 
     int joy_x = (data_s->x) - (_cfg_joy_res / 2);
@@ -60,65 +68,74 @@ void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data
     int joy_z = (data_s->z) - (_cfg_joy_res / 2);
 
     if (joy_x < -_cfg_joy_dead) {
-        activePiece->position.x++;
+        activePiece->rotateCounterClockwise();
         activePiece->interact();
         ShouldRunGame = true;
-    } else if (joy_x > _cfg_joy_dead) {
+        cooldown_timer = millis() + cooldown;
+        /*
         activePiece->position.x--;
+        last_view_offset = view_offset;
+        view_offset++;
+
         activePiece->interact();
         ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        */
+    } else if (joy_x > _cfg_joy_dead) {
+        activePiece->rotateCounterClockwise();
+        activePiece->interact();
+        ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        /*
+        activePiece->position.x++;
+        last_view_offset = view_offset;
+        view_offset--;
+
+        activePiece->interact();
+        ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        */
     }
     if (joy_y < -_cfg_joy_dead) {
-        activePiece->rotateClockwise();
+        activePiece->rotateCounterClockwise();
         activePiece->interact();
         ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
     } else if (joy_y > _cfg_joy_dead) {
         interval = 100;
         ShouldRunGame = true;
     } else {
         interval = 750;
-        ShouldRunGame = true;
     }
     if (joy_z < -_cfg_joy_dead) {
+        activePiece->position.x++;
+        last_view_offset = view_offset;
+        view_offset--;
+
+        activePiece->interact();
+        ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        /*
         activePiece->rotateCounterClockwise();
         activePiece->interact();
         ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        */
     } else if (joy_z > _cfg_joy_dead) {
+        activePiece->position.x--;
+        last_view_offset = view_offset;
+        view_offset++;
+
+        activePiece->interact();
+        ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        /*
         activePiece->rotateClockwise();
         activePiece->interact();
         ShouldRunGame = true;
+        cooldown_timer = millis() + cooldown;
+        */
     }
-    /*
-       switch (int(val)) {
-        case 1: // rotate
-            activePiece->rotateClockwise();
-            activePiece->interact();
-            ShouldRunGame = true;
-            break;
-        case 2: // right
-            activePiece->position.x++;
-            activePiece->interact();
-            ShouldRunGame = true;
-            break;
-        case 3: // left
-            activePiece->position.x--;
-            activePiece->interact();
-            ShouldRunGame = true;
-            break;
-        case 4: // fast_down
-            interval = 100;
-            ShouldRunGame = true;
-            break;
-        case 5: // slow_down
-            interval = 750;
-            ShouldRunGame = true;
-            break;
-
-        default:
-            break;
-        }
-    });
-       */
 }
 
 void gameOver() {
@@ -232,8 +249,10 @@ void test() {
 
     if ((fail == true && hitBottom == false) || (map.checkCollision(*activePiece) && !activePiece->getInteract())) {
         activePiece->undo();
+        view_offset = last_view_offset;
     } else if ((fail == false && hitBottom == true) || (map.checkCollision(*activePiece) && activePiece->getInteract())) {
         activePiece->undo();
+        view_offset = last_view_offset;
         interval = 750;
         map << *activePiece; // merge
         map.checkLines();
@@ -241,6 +260,7 @@ void test() {
     } else {
 
         activePiece->confirm();
+        last_view_offset = view_offset;
     }
 
     for (int i = 0; i < display.width(); i++) {
