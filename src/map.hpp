@@ -3,7 +3,7 @@
 #include "colors.hpp"
 #include "global_vars.hpp"
 #include "piece.hpp"
-#include "tetris_config.hpp"
+#include "config.hpp"
 #include "utils.hpp"
 #include <array>
 #include <math.h>

@@ -1,6 +1,6 @@
 #include "piece.hpp"
 #include "colors.hpp"
-#include "tetris_config.hpp"
+#include "config.hpp"
 #include "global_vars.hpp"
 #include <vector>
 
