@@ -45,32 +45,42 @@ void tetris_up() {
 void tetris_down() {
     interval = 100;
 }
+void tetris_y_mid() {
+    interval = 750;
+}
+
+
 void tetris_left() {
-    activePiece->rotateCounterClockwise();
-    activePiece->interact();
-}
-void tetris_right() {
-    activePiece->rotateCounterClockwise();
-    activePiece->interact();
-}
-void tetris_cw() {
+    /*activePiece->rotateCounterClockwise();
+    activePiece->interact();*/
     activePiece->position.x++;
     last_view_offset = view_offset;
     view_offset--;
 
     activePiece->interact();
 }
-void tetris_ccw() {
+void tetris_right() {
+    /*activePiece->rotateCounterClockwise();
+    activePiece->interact();*/
     activePiece->position.x--;
     last_view_offset = view_offset;
     view_offset++;
-
-    activePiece->interact();
 }
 void tetris_x_mid() {
 }
-void tetris_y_mid() {
-    interval = 750;
+
+
+void tetris_cw() {
+    activePiece->rotateClockwise();
+    activePiece->interact();
+    
+}
+void tetris_ccw() {
+    activePiece->rotateCounterClockwise();
+    activePiece->interact();
+    
+
+    activePiece->interact();
 }
 void tetris_z_mid() {
 }

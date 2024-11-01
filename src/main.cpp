@@ -16,9 +16,12 @@ int mode = 0;
 
 extern int tetris_main();
 extern int shanke_main();
+extern int fire_main();
 
 extern void shanke_left();
 extern void shanke_right();
+extern void shanke_up();
+extern void shanke_down();
 
 extern void tetris_left();
 extern void tetris_right();
@@ -31,10 +34,12 @@ extern void tetris_x_mid();
 extern void tetris_y_mid();
 extern void tetris_z_mid();
 
+extern void stop_fire();
+
 long cooldown_timer = 0;
 long cooldown = 250;
 
-int brightness = 5;
+int brightness = 50;
 
 bool GameOverBool = false;
 bool Paused = false;
@@ -59,73 +64,159 @@ void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data
 
     printf("x:%d y:%d z:%d \n", data_s->x, data_s->y, data_s->z);
 
-    int joy_x = (data_s->x) - (_cfg_joy_res / 2);
-    int joy_y = (data_s->y) - (_cfg_joy_res / 2);
-    int joy_z = (data_s->z) - (_cfg_joy_res / 2);
+    int joy_x = (_cfg_joy_res - (data_s->z)) - (_cfg_joy_res / 2);
+    int joy_y = (_cfg_joy_res - (data_s->y)) - (_cfg_joy_res / 2);
+    int joy_z = (data_s->x) - (_cfg_joy_res / 2);
 
-    if (joy_x < -_cfg_joy_dead) {
+    if (joy_x < -_cfg_joy_dead) { // left
         switch (mode) {
         case 0:
             tetris_left();
-            /* code */
             break;
         case 1:
             shanke_left();
             break;
+        case 2:
+            stop_fire();
+            break;
 
         default:
             break;
         }
         cooldown_timer = millis() + cooldown;
-    } else if (joy_x > _cfg_joy_dead) {
+    } else if (joy_x > _cfg_joy_dead) { // right
         switch (mode) {
         case 0:
             tetris_right();
-            /* code */
             break;
         case 1:
             shanke_right();
             break;
+        case 2:
+            stop_fire();
+            break;
 
         default:
             break;
         }
         cooldown_timer = millis() + cooldown;
     } else {
-        tetris_x_mid();
+                switch (mode) {
+        case 0:
+            tetris_x_mid();
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
     }
 
-    if (joy_y < -_cfg_joy_dead) {
-        tetris_up();
+    if (joy_y < -_cfg_joy_dead) { // up
+        switch (mode) {
+        case 0:
+            tetris_up();
+            break;
+        case 1:
+            shanke_up();
+            break;
+        case 2:
+            stop_fire();
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
-    } else if (joy_y > _cfg_joy_dead) {
-        tetris_down();
+    } else if (joy_y > _cfg_joy_dead) { // down
+        switch (mode) {
+        case 0:
+            tetris_down();
+            break;
+        case 1:
+            shanke_down();
+            break;
+        case 2:
+            stop_fire();
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
     } else {
-        tetris_y_mid();
+        switch (mode) {
+        case 0:
+            tetris_y_mid();
+            break;
+        case 1:
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
     }
 
-    if (joy_z < -_cfg_joy_dead) {
-        tetris_cw();
+    if (joy_z < -_cfg_joy_dead) { // cw
+        switch (mode) {
+        case 0:
+            tetris_cw();
+            break;
+        case 1:
+            break;
+        case 2:
+            stop_fire();
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
     } else if (joy_z > _cfg_joy_dead) {
-        tetris_ccw();
+        switch (mode) {
+        case 0:
+            tetris_ccw();
+            break;
+        case 1:
+            break;
+        case 2:
+            stop_fire();
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
     } else {
-        tetris_z_mid();
+        switch (mode) {
+        case 0:
+            tetris_z_mid();
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+
+        default:
+            break;
+        }
         cooldown_timer = millis() + cooldown;
     }
 }
 
 void gameOver(int score) {
-    display.clear();
-    display.fill(Rgb(255, 0, 10));
-    if (score > 120) {
-        display.fill(Rgb(255, 255, 255));
-    }
-    delay(2000);
+    //display.clear();
+    //display.fill(Rgb(255, 0, 10));
+    //if (score > 120) {
+    //    display.fill(Rgb(255, 255, 255));
+    //}
+
+    delay(1000);
 
     GameOverBool = false;
 }
@@ -162,5 +253,8 @@ void logicMain() {
 
         mode = 1; // shanke
         gameOver(shanke_main());
+
+        mode = 2; // fire
+        gameOver(fire_main());
     }
 }

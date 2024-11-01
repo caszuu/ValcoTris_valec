@@ -84,7 +84,8 @@ public:
                 shanke_parts[0] = shanke_head;
             }
             draw();
-            // TODO: delay
+
+            delay(250);
         }
     }
 
@@ -102,7 +103,7 @@ public:
         }
     }
 
-    void right() noexcept {
+    /*void right() noexcept {
         if (++next_shanke_dir % 4 == (shanke_dir + 2) % 4)
             --next_shanke_dir;
         next_shanke_dir %= 4;
@@ -112,7 +113,21 @@ public:
         if (--next_shanke_dir % 4 == (shanke_dir + 2) % 4)
             --next_shanke_dir;
         next_shanke_dir %= 4;
+    }*/
+
+    void down() noexcept {
+        next_shanke_dir = 0;
     }
+    void right() noexcept {
+        next_shanke_dir = 1;
+    }
+    void up() noexcept {
+        next_shanke_dir = 2;
+    }
+    void left() noexcept {
+        next_shanke_dir = 3;
+    }
+
 
     void draw() const noexcept {
         display.clear();
@@ -134,7 +149,7 @@ private:
 
     Vec2 shanke_head;
     Vec2 food_pos;
-    constexpr static Vec2 map_size = Vec2 { .x = 12, .y = 10 };
+    constexpr static Vec2 map_size = Vec2 { .x = 11, .y = 9 };
 
     int32_t shanke_dir = 1;
     int32_t next_shanke_dir = 1;
@@ -157,4 +172,11 @@ void shanke_left() noexcept {
 
 void shanke_right() noexcept {
     shanke::ShankeState::getShankeState().right();
+}
+void shanke_up() noexcept {
+    shanke::ShankeState::getShankeState().up();
+}
+
+void shanke_down() noexcept {
+    shanke::ShankeState::getShankeState().down();
 }
