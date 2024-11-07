@@ -5,18 +5,46 @@
 #include <array>
 #include <iostream>
 #include <memory>
+#include <cstdint>
 #include <stdio.h>
 
-#include "config.hpp"
+void device_state::enter_launcher() {
 
-// Valec MAC    = C8:2B:96:B5:CA:84
-// Joystick MAC = C8:2B:96:B8:C9:C0
+}
 
-int mode = 0;
+void device_state::process_input(const void* data) {
+    joystick_event ev;
+    ev.raw_input = *reinterpret_cast<const Vec3*>(data);
 
-extern int tetris_main();
-extern int shanke_main();
-extern int fire_main();
+    if (next_valid_input_time > millis()) return;
+
+    // process raw input
+
+    ev.current_input = Vec3{
+        (_cfg_joy_res - (ev.raw_input.z)) - (_cfg_joy_res / 2),
+        (_cfg_joy_res - (ev.raw_input.y)) - (_cfg_joy_res / 2),
+        (ev.raw_input.x) - (_cfg_joy_res / 2),
+    };
+
+    ev.dpad_state = (ev.current_input.y < -_cfg_joy_dead << 0) | // top
+                    (ev.current_input.x < -_cfg_joy_dead << 1) | // right
+                    (ev.current_input.y > _cfg_joy_dead << 2) |  // bottom
+                    (ev.current_input.x > _cfg_joy_dead << 3);   // left
+
+    // forward input event
+
+    next_valid_input_time = millis() + _cfg_joy_cooldown;
+
+    if (!active_callback) {
+        printf("no active joystick callback!\n");
+        return;
+    }
+
+    active_callback(ev);
+}
+
+/*
+device input handling
 
 extern void shanke_left();
 extern void shanke_right();
@@ -35,32 +63,19 @@ extern void tetris_y_mid();
 extern void tetris_z_mid();
 
 extern void stop_fire();
-
-long cooldown_timer = 0;
-long cooldown = 250;
+*/
 
 int brightness = 50;
 
 bool GameOverBool = false;
 bool Paused = false;
 
-//Structure example to receive data
-//Must match the sender structure
-typedef struct data_struct {
-    int x;
-    int y;
-    int z;
-} data_struct;
+static device_state dstate;
 
-//Create a struct_message called data
-data_struct data;
-
-// void receive_callback(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
-void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data, int data_len) {
-    const data_struct* data_s = (const data_struct*)data;
-    if (cooldown_timer > millis()) {
-        return;
-    }
+// called when receiving data from the joystick
+static void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data, int data_len) {
+    dstate.process_input(data);
+    return;
 
     printf("x:%d y:%d z:%d \n", data_s->x, data_s->y, data_s->z);
 
@@ -209,18 +224,6 @@ void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data
     }
 }
 
-void gameOver(int score) {
-    //display.clear();
-    //display.fill(Rgb(255, 0, 10));
-    //if (score > 120) {
-    //    display.fill(Rgb(255, 255, 255));
-    //}
-
-    delay(1000);
-
-    GameOverBool = false;
-}
-
 void logicMain() {
 
     // Initialize NVS
@@ -247,14 +250,6 @@ void logicMain() {
     // Register callback function for receiving data
     esp_now_register_recv_cb(recieve_callback);
 
-    while (true) {
-        mode = 0; // tetris
-        gameOver(tetris_main());
-
-        mode = 1; // shanke
-        gameOver(shanke_main());
-
-        mode = 2; // fire
-        gameOver(fire_main());
-    }
+    // start launcher
+    dstate.enter_launcher();
 }
