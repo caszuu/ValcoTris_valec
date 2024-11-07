@@ -8,8 +8,14 @@
 #include <cstdint>
 #include <stdio.h>
 
-void device_state::enter_launcher() {
+// valcotris apps
+#include "fire_anim/fire.hpp"
 
+void device_state::enter_launcher() {
+    while (true) {
+        active_callback = &fire_anim::fire_input_cb;
+        fire_anim::fire_main();
+    }
 }
 
 void device_state::process_input(const void* data) {
@@ -42,28 +48,6 @@ void device_state::process_input(const void* data) {
 
     active_callback(ev);
 }
-
-/*
-device input handling
-
-extern void shanke_left();
-extern void shanke_right();
-extern void shanke_up();
-extern void shanke_down();
-
-extern void tetris_left();
-extern void tetris_right();
-extern void tetris_up();
-extern void tetris_down();
-extern void tetris_cw();
-extern void tetris_ccw();
-
-extern void tetris_x_mid();
-extern void tetris_y_mid();
-extern void tetris_z_mid();
-
-extern void stop_fire();
-*/
 
 int brightness = 50;
 
