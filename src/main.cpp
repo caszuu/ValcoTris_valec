@@ -10,11 +10,15 @@
 
 // valcotris apps
 #include "fire_anim/fire.hpp"
+#include "shanke/shanke.hpp"
 
 void device_state::enter_launcher() {
     while (true) {
         active_callback = &fire_anim::fire_input_cb;
         fire_anim::fire_main();
+
+        active_callback = &shanke::shanke_input_cb;
+        shanke::shanke_main();
     }
 }
 
