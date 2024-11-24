@@ -13,4 +13,7 @@ struct Vec3 {
     int32_t x, y, z;
 
     constexpr bool operator==(const Vec3& o) const noexcept { return x == o.x && y == o.y && z == o.z; }
-}
+};
+
+// defined in main.cpp -> fetched value from device_state
+int get_brightness() noexcept;

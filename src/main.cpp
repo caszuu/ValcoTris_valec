@@ -8,9 +8,12 @@
 #include <cstdint>
 #include <stdio.h>
 
+#include "main.hpp"
+
 // valcotris apps
 #include "fire_anim/fire.hpp"
 #include "shanke/shanke.hpp"
+#include "tetris/tetris.hpp"
 
 void device_state::enter_launcher() {
     while (true) {
@@ -19,6 +22,9 @@ void device_state::enter_launcher() {
 
         active_callback = &shanke::shanke_input_cb;
         shanke::shanke_main();
+
+        active_callback = &tetris::tetris_input_cb;
+        tetris::tetris_main();
     }
 }
 
@@ -53,163 +59,15 @@ void device_state::process_input(const void* data) {
     active_callback(ev);
 }
 
-int brightness = 50;
-
-bool GameOverBool = false;
-bool Paused = false;
-
 static device_state dstate;
 
 // called when receiving data from the joystick
 static void recieve_callback(const esp_now_recv_info_t* info, const unsigned char* data, int data_len) {
     dstate.process_input(data);
-    return;
+}
 
-    printf("x:%d y:%d z:%d \n", data_s->x, data_s->y, data_s->z);
-
-    int joy_x = (_cfg_joy_res - (data_s->z)) - (_cfg_joy_res / 2);
-    int joy_y = (_cfg_joy_res - (data_s->y)) - (_cfg_joy_res / 2);
-    int joy_z = (data_s->x) - (_cfg_joy_res / 2);
-
-    if (joy_x < -_cfg_joy_dead) { // left
-        switch (mode) {
-        case 0:
-            tetris_left();
-            break;
-        case 1:
-            shanke_left();
-            break;
-        case 2:
-            stop_fire();
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    } else if (joy_x > _cfg_joy_dead) { // right
-        switch (mode) {
-        case 0:
-            tetris_right();
-            break;
-        case 1:
-            shanke_right();
-            break;
-        case 2:
-            stop_fire();
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    } else {
-                switch (mode) {
-        case 0:
-            tetris_x_mid();
-            break;
-        case 1:
-            break;
-        case 2:
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    }
-
-    if (joy_y < -_cfg_joy_dead) { // up
-        switch (mode) {
-        case 0:
-            tetris_up();
-            break;
-        case 1:
-            shanke_up();
-            break;
-        case 2:
-            stop_fire();
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    } else if (joy_y > _cfg_joy_dead) { // down
-        switch (mode) {
-        case 0:
-            tetris_down();
-            break;
-        case 1:
-            shanke_down();
-            break;
-        case 2:
-            stop_fire();
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    } else {
-        switch (mode) {
-        case 0:
-            tetris_y_mid();
-            break;
-        case 1:
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    }
-
-    if (joy_z < -_cfg_joy_dead) { // cw
-        switch (mode) {
-        case 0:
-            tetris_cw();
-            break;
-        case 1:
-            break;
-        case 2:
-            stop_fire();
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    } else if (joy_z > _cfg_joy_dead) {
-        switch (mode) {
-        case 0:
-            tetris_ccw();
-            break;
-        case 1:
-            break;
-        case 2:
-            stop_fire();
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    } else {
-        switch (mode) {
-        case 0:
-            tetris_z_mid();
-            break;
-        case 1:
-            break;
-        case 2:
-            break;
-
-        default:
-            break;
-        }
-        cooldown_timer = millis() + cooldown;
-    }
+int get_brightness() noexcept {
+    return dstate.get_brightness();
 }
 
 void logicMain() {
@@ -235,6 +93,7 @@ void logicMain() {
     uint8_t mac[6];
     esp_wifi_get_mac(WIFI_IF_STA, mac);
     ESP_LOGI("main", "MAC: %02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
     // Register callback function for receiving data
     esp_now_register_recv_cb(recieve_callback);
 

@@ -6,8 +6,6 @@
 #include "input.hpp"
 #include "utils.hpp"
 
-extern int brightness;
-
 namespace shanke {
     constexpr static Vec2 default_head = { .x = 6, .y = 5 };
 
@@ -133,10 +131,11 @@ namespace shanke {
             }
             display.setColor(food_pos.x, food_pos.y, Rgb(255, 0, 0));
 
-            display.show(brightness);
+            display.show(get_brightness());
         }
 
         static ShankeState& getShankeState() noexcept { return *shanke_state; }
+        uint32_t getScore() noexcept { return score; }
 
     private:
         static ShankeState* shanke_state;
@@ -158,20 +157,21 @@ namespace shanke {
         auto& state = shanke::ShankeState::getShankeState();
         if (!ev.dpad_state) return; // no action, return
 
-        if (ev.is_dpad_active(0)) {
+        if (ev.is_dpad_active(dpad_direction::up)) {
             state.up();
-        } else if (ev.is_dpad_active(1)) {
+        } else if (ev.is_dpad_active(dpad_direction::right)) {
             state.right();
-        } else if (ev.is_dpad_active(2)) {
+        } else if (ev.is_dpad_active(dpad_direction::down)) {
             state.down();
-        } else if (ev.is_dpad_active(3)) {
+        } else if (ev.is_dpad_active(dpad_direction::left)) {
             state.left();
         } 
     }
 
-    void shanke_main() {
+    int shanke_main() {
         shanke::ShankeState game_state;
 
         game_state.loop();
+        return game_state.getScore();
     }
 }

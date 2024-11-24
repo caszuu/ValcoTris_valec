@@ -2,12 +2,10 @@
 
 #include "input.hpp"
 
-extern int brightness;
-
 namespace fire_anim {
     static constexpr int MAX_TEMPERATURE = 33;
 
-    static constexpr std::array< Rgb, MAX_TEMPERATURE + 1 > temperatures{
+    static inline std::array< Rgb, MAX_TEMPERATURE + 1 > temperatures{
         Rgb(0,  0,   0),
         Rgb(7,  10,  10),
         Rgb(7,  31,  7),
@@ -45,5 +43,5 @@ namespace fire_anim {
     };
 
     void fire_input_cb(const joystick_event& ev);
-    void fire_main();
+    int fire_main();
 }

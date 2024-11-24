@@ -13,15 +13,18 @@
 
 class device_state {
 public:
-    device_state() : active_game{0}, next_valid_input_time{0} { }
+    device_state() : active_game{0}, next_valid_input_time{0}, screen_brightness{50} { }
     ~device_state() = default;
 
     void enter_launcher();
     void process_input(const void* data);
 
+    uint32_t get_brightness();
+
 private:
     uint8_t active_game;
     uint32_t next_valid_input_time;
+    uint32_t screen_brightness;
 
     input_callback_t active_callback = nullptr;
 };
